@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>svg2trains</title>
+<style>
+  :root {
+    --bg: #14161a; --panel: #1d2026; --line: #2c3038; --text: #e6e8eb;
+    --muted: #9aa1ab; --accent: #4da3ff; --warn: #e0b34c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, sans-serif; background: var(--bg);
+         color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+  #sidebar { width: 320px; min-width: 320px; background: var(--panel);
+             border-right: 1px solid var(--line); padding: 16px; overflow-y: auto; }
+  #viewer { flex: 1; position: relative; }
+  #canvas-holder { position: absolute; inset: 0; }
+  h1 { font-size: 17px; margin: 0 0 12px; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+       color: var(--muted); margin: 18px 0 6px; }
+  label { display: block; margin: 8px 0 2px; color: var(--muted); font-size: 12px; }
+  input, select, button { width: 100%; padding: 7px 9px; border-radius: 6px;
+    border: 1px solid var(--line); background: #12141a; color: var(--text); font: inherit; }
+  input[type=file] { padding: 4px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  button { cursor: pointer; background: #232730; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #0b1017; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: default; }
+  #parts .part { display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+    border: 1px solid var(--line); border-radius: 6px; margin: 4px 0; cursor: pointer; }
+  #parts .part.selected { border-color: var(--accent); }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #0006; }
+  #warnings { color: var(--warn); font-size: 12px; white-space: pre-wrap; }
+  #info { font-size: 12.5px; background: #12141a; border: 1px solid var(--line);
+          border-radius: 6px; padding: 8px; min-height: 56px; white-space: pre-wrap; }
+  #dims { position: absolute; top: 12px; left: 12px; background: #0009;
+          padding: 6px 10px; border-radius: 6px; font-size: 13px; pointer-events: none; }
+  #hint { position: absolute; bottom: 10px; left: 12px; color: #fff8; font-size: 12px;
+          pointer-events: none; }
+  .toggles { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .toggles label { margin: 0; display: flex; gap: 5px; align-items: center; color: var(--text); }
+  .toggles input { width: auto; }
+  #explode { width: 100%; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <div id="sidebar">
+    <h1>svg2trains</h1>
+
+    <h2>Input</h2>
+    <input type="file" id="file" accept=".svg">
+    <label for="layer">Layer</label>
+    <select id="layer" disabled></select>
+
+    <h2>Size &amp; colors</h2>
+    <div class="row">
+      <div>
+        <label for="size-by">Size by</label>
+        <select id="size-by">
+          <option value="length">Length</option>
+          <option value="width">Width</option>
+          <option value="height">Height</option>
+        </select>
+      </div>
+      <div>
+        <label for="size-mm">mm</label>
+        <input type="number" id="size-mm" value="150" min="1" step="0.5">
+      </div>
+    </div>
+    <label for="color-mode">Color mode</label>
+    <select id="color-mode">
+      <option value="side">Side view colors (full width)</option>
+      <option value="projection">Project colors from all views</option>
+    </select>
+    <div id="shell-row" style="display:none">
+      <label for="shell-depth">Color shell depth (mm)</label>
+      <input type="number" id="shell-depth" value="1.2" min="0.2" step="0.2">
+    </div>
+
+    <div style="margin-top:14px" class="row">
+      <button id="convert" class="primary" disabled>Convert</button>
+      <button id="download" disabled>Download 3MF</button>
+    </div>
+    <div id="warnings"></div>
+
+    <h2>Filaments</h2>
+    <div id="parts"></div>
+
+    <h2>Selection</h2>
+    <div id="info">Click a face or an edge in the 3D view.</div>
+  </div>
+
+  <div id="viewer">
+    <div id="canvas-holder"></div>
+    <div id="dims"></div>
+    <div id="hint">drag: orbit &nbsp; shift-drag: pan &nbsp; wheel: zoom &nbsp; click: inspect</div>
+    <div style="position:absolute; top:12px; right:12px; width:210px; background:#0009; padding:8px 10px; border-radius:6px;">
+      <div class="toggles">
+        <label><input type="checkbox" id="show-edges" checked> edges</label>
+      </div>
+      <label for="explode" style="color:#fff9; font-size:12px; margin-top:6px">explode</label>
+      <input type="range" id="explode" min="0" max="1" step="0.01" value="0">
+    </div>
+  </div>
+
+<script type="importmap">
+{ "imports": { "three": "/static/vendor/three.module.js" } }
+</script>
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>
