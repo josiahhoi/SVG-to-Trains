@@ -17,7 +17,7 @@ from .partition import (
     partition_side,
 )
 from .register import register
-from .silhouette import color_regions, painted_regions, silhouette
+from .silhouette import color_regions, fill_holes, painted_regions, silhouette
 from .svgload import load_layer
 from .views import detect_views
 from .hull import visual_hull
@@ -39,6 +39,7 @@ class Options:
     min_area: float = 0.05             # mm^2, per-color region cleanup
     min_part_volume: float = MIN_PART_VOLUME
     merge_colors: int = 0              # max channel distance, 0 = off
+    carve_holes: bool = False          # unpainted enclosed areas become holes
     view_labels: dict[str, str] = field(default_factory=dict)
     view_boxes: dict[str, tuple[float, float, float, float]] = field(default_factory=dict)
     cluster_gap: float | None = None
@@ -153,16 +154,36 @@ def convert(svg_path: str, options: Options | None = None) -> Result:
     view_sil = {
         v: affine_transform(sil, reg.transforms[v]) for v, sil in view_sil_svg.items()
     }
-    # a short front/back drawing says nothing about the train below its
-    # bottom edge — fill that zone so its prism doesn't clip wheels etc.
-    for view, v_min in reg.fill_below.items():
-        from shapely.geometry import box as shapely_box
-        from shapely import unary_union
+    if not opts.carve_holes:
+        # windows/doors drawn as outlines are surface detail, not holes
+        view_sil = {v: fill_holes(sil) for v, sil in view_sil.items()}
 
-        filler = shapely_box(
-            -reg.width / 2 - 1.0, -1.0, reg.width / 2 + 1.0, v_min + 0.01
+    from shapely import unary_union
+    from shapely.geometry import box as shapely_box
+
+    def stroke_margin(view: str) -> float:
+        # strokes can overhang the fills at a drawing's bottom edge, shifting
+        # the bbox the transform anchors to; welding across that overhang
+        # keeps thin unpainted slits from carving slab gaps out of the hull
+        scale = abs(reg.transforms[view][0])
+        shapes = viewset.views[view].shapes
+        overhang = max(
+            (s.stroke_width for s in shapes if s.stroke is not None), default=0.0
         )
-        view_sil[view] = unary_union([view_sil[view], filler])
+        return overhang * scale + 0.1
+
+    for view in ("front", "back"):
+        sil = view_sil[view]
+        if sil.is_empty:
+            continue
+        bx0, by0, bx1, _ = sil.bounds
+        margin = stroke_margin(view)
+        # a short front/back drawing also says nothing about the train below
+        # its bottom edge — fill all the way down so it doesn't clip wheels
+        floor = -1.0 if view in reg.fill_below else by0
+        weld = shapely_box(bx0, floor, bx1, by0 + margin)
+        merged = unary_union([sil, weld])
+        view_sil[view] = merged if opts.carve_holes else fill_holes(merged)
     view_regions = {
         v: {
             c: affine_transform(g, reg.transforms[v])

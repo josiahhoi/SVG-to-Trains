@@ -95,6 +95,18 @@ def partition_side(
             pieces.append(ColorPart(color=color, solid=solid, provenance="side"))
     if not pieces:
         raise HullError("No side-view color region intersects the hull.")
+    # hull volume with no side-view paint over it (e.g. hole-filled window
+    # interiors) joins the largest part rather than becoming a void
+    residual = hull - m3.Manifold.batch_boolean(
+        [p.solid for p in pieces], m3.OpType.Add
+    )
+    if not residual.is_empty() and residual.volume() > 1e-9:
+        host = max(range(len(pieces)), key=lambda i: pieces[i].volume)
+        pieces[host] = ColorPart(
+            color=pieces[host].color,
+            solid=pieces[host].solid + residual,
+            provenance=pieces[host].provenance,
+        )
     return _absorb_slivers(_merge_by_color(pieces), min_part_volume)
 
 

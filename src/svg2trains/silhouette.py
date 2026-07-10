@@ -212,6 +212,25 @@ def silhouette(regions: list[PaintedRegion]):
     return _polygonal(make_valid(unary_union([r.geom for r in regions])))
 
 
+def fill_holes(geom):
+    """Keep only exterior rings — unpainted enclosed areas become solid.
+
+    A window or door drawn as an outline leaves its interior unpainted; for
+    hull carving that must read as surface detail, not a hole through the
+    train.
+    """
+    if geom.is_empty:
+        return geom
+    polys = [
+        Polygon(p.exterior)
+        for p in getattr(geom, "geoms", [geom])
+        if isinstance(p, Polygon) and not p.is_empty
+    ]
+    if not polys:
+        return Polygon()
+    return _polygonal(make_valid(unary_union(polys)))
+
+
 def color_regions(regions: list[PaintedRegion], min_area: float = 0.0) -> dict[str, object]:
     """Resolve paint order into non-overlapping per-color regions.
 

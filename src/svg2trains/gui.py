@@ -61,6 +61,7 @@ def create_app() -> Flask:
             shell_depth=float(params.get("shell_depth", 1.2)),
             core_color=params.get("core_color") or None,
             merge_colors=int(params.get("merge_colors", 0)),
+            carve_holes=bool(params.get("carve_holes", False)),
             tolerance=float(params.get("tolerance", 0.1)),
             check=True,
         )

@@ -59,6 +59,9 @@ def _add_convert_args(p: argparse.ArgumentParser, with_output: bool = True) -> N
                    help="which screen side of the side view is the train front")
     p.add_argument("--no-back-mirror", action="store_true",
                    help="back view drawn see-through (not mirrored)")
+    p.add_argument("--carve-holes", action="store_true",
+                   help="unpainted enclosed areas in a view carve real holes "
+                   "through the model (default: treat them as surface detail)")
     p.add_argument("--tolerance", type=float, default=0.1,
                    help="curve flattening tolerance in mm (default 0.1)")
     p.add_argument("--min-area", type=float, default=0.05,
@@ -95,6 +98,7 @@ def _options_from(args: argparse.Namespace):
         view_priority=tuple(t.strip() for t in args.view_priority.split(",") if t.strip()),
         front_right=(args.front == "right"),
         no_back_mirror=args.no_back_mirror,
+        carve_holes=args.carve_holes,
         tolerance=args.tolerance,
         min_area=args.min_area,
         min_part_volume=args.min_part_volume,
