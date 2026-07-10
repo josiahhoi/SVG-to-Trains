@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "svg2trains"
+version = "0.1.0"
+description = "Convert multi-view train SVGs into multi-color Bambu Lab 3MF models"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "svgelements>=1.9",
+    "shapely>=2.0",
+    "numpy>=1.24",
+    "manifold3d>=3.5",
+    "flask>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+svg2trains = "svg2trains.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/svg2trains"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
